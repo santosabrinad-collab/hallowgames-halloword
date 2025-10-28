@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HallowWord - HallowGames</title>
+<style>
+  body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #001f3f;
+    color: #f9d71c;
+    text-align: center;
+    padding: 20px;
+  }
+  h1 {
+    font-size: 2em;
+    margin-bottom: 10px;
+  }
+  #game {
+    display: none;
+    margin-top: 20px;
+  }
+  .grid {
+    display: grid;
+    justify-content: center;
+    gap: 5px;
+    margin: 10px auto;
+  }
+  .row {
+    display: flex;
+    justify-content: center;
+  }
+  .cell {
+    width: 40px;
+    height: 40px;
+    border: 2px solid #f9d71c;
+    text-transform: uppercase;
+    font-weight: bold;
+    font-size: 20px;
+    margin: 2px;
+    background-color: white;
+    color: #001f3f;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .correct { background-color: #00b300; color: white; } /* green */
+  .present { background-color: #e6b800; color: white; } /* yellow */
+  .absent { background-color: #555; color: white; } /* gray */
+  input[type="text"] {
+    padding: 8px;
+    font-size: 16px;
+    border-radius: 5px;
+    border: none;
+  }
+  button {
+    background-color: #f9d71c;
+    border: none;
+    color: #001f3f;
+    font-weight: bold;
+    padding: 10px 20px;
+    margin: 10px;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  button:hover {
+    background-color: #ffe666;
+  }
+  #message {
+    font-size: 1.2em;
+    margin-top: 10px;
+  }
+  #timer {
+    font-size: 1.5em;
+    font-weight: bold;
+    margin-top: 10px;
+  }
+</style>
+</head>
+<body>
+  <h1>🎃 HallowWord - HallowGames 🎃</h1>
+  <p>Type your team name and guess as many words as you can in 2 minutes!</p>
+
+  <div id="start-screen">
+    <input type="text" id="teamName" placeholder="Team name">
+    <br>
+    <button onclick="startGame()">Start Game</button>
+  </div>
+  
+  <div id="game">
+    <div id="timer">⏱️ 2:00</div>
+    <p id="hint"></p>
+    <div id="grid"></div>
+    <input type="text" id="guessInput" placeholder="Enter your guess">
+    <button onclick="submitGuess()">Submit</button>
+    <p id="message"></p>
+    <p id="progress"></p>
+  </div>
+
+<script>
+const words = [
+  { word: "SACI", hint: "Folklore" },
+  { word: "MULA", hint: "Folklore" },
+  { word: "CURUPIRA", hint: "Folklore" },
+  { word: "ABOBORA", hint: "Vegetable" },
+  { word: "VASSOURA", hint: "Object" },
+  { word: "FANTASMA", hint: "Scary" },
+  { word: "ZUMBI", hint: "Scary" },
+  { word: "CALDEIRAO", hint: "Potion" },
+  { word: "MORCEGO", hint: "Animal" },
+  { word: "CAVEIRA", hint: "Scary" }
+];
+
+const sheetURL = "https://script.google.com/macros/s/AKfycbxuevVAnkolIvi3o54QFoXYzBr6jX1FDMl9hcJK6ZF8YWufe8_jBVKW9KNJ-LJ-7EjH/exec";
+
+let currentWordIndex = 0;
+let attempts = 0;
+let team = "";
+let timer;
+let timeLeft = 120;
+let currentGrid = [];
+
+function startGame() {
+  team = document.getElementById("teamName").value.trim();
+  if (!team) {
+    alert("Please enter your team name!");
+    return;
+  }
+  document.getElementById("start-screen").style.display = "none";
+  document.getElementById("game").style.display = "block";
+  startTimer();
+  loadWord();
+}
+
+function loadWord() {
+  if (currentWordIndex >= words.length) return endGame();
+
+  const wordObj = words[currentWordIndex];
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+  currentGrid = [];
+
+  for (let i = 0; i < 5; i++) {
+    const row = document.createElement("div");
+    row.classList.add("row");
+    for (let j = 0; j < wordObj.word.length; j++) {
+      const cell = document.createElement("div");
+      cell.classList.add("cell");
+      row.appendChild(cell);
+    }
+    currentGrid.push(row);
+    grid.appendChild(row);
+  }
+
+  document.getElementById("hint").textContent = `Hint: ${wordObj.hint}`;
+  document.getElementById("progress").textContent = `Word ${currentWordIndex + 1} of ${words.length}`;
+  document.getElementById("guessInput").value = "";
+  document.getElementById("message").textContent = "";
+  attempts = 0;
+}
+
+function submitGuess() {
+  const input = document.getElementById("guessInput").value.toUpperCase().trim();
+  if (!input) return;
+
+  const target = words[currentWordIndex].word;
+  const row = currentGrid[attempts];
+  const guessArray = input.split("");
+  const targetArray = target.split("");
+  const cellElements = row.children;
+
+const targetLetterCount = {};
+  targetArray.forEach(letter => {
+    targetLetterCount[letter] = (targetLetterCount[letter] || 0) + 1;
+  });
+  
+for (let i = 0; i < targetArray.length; i++) {
+    const cell = cellElements[i];
+    cell.textContent = guessArray[i] || "";
+    if (guessArray[i] === targetArray[i]) {
+      cell.classList.add("correct");
+      targetLetterCount[guessArray[i]]--;
+    }
+  }
+
+for (let i = 0; i < targetArray.length; i++) {
+    const cell = cellElements[i];
+    if (cell.classList.contains("correct")) continue;
+
+if (guessArray[i] && targetLetterCount[guessArray[i]] > 0) {
+      cell.classList.add("present");
+      targetLetterCount[guessArray[i]]--;
+    } else {
+      cell.classList.add("absent");
+    }
+  }
+
+
+  sendResult(team, target, input, attempts + 1, input === target ? "Correct" : "Wrong");
+
+  attempts++;
+  document.getElementById("guessInput").value = "";
+
+  if (input === target) {
+    document.getElementById("message").textContent = "✅ Correct!";
+    currentWordIndex++;
+    setTimeout(loadWord, 1000);
+  } else if (attempts >= 5) {
+    document.getElementById("message").textContent = "❌ Out of tries!";
+    currentWordIndex++;
+    setTimeout(loadWord, 1000);
+  }
+}
+
+function startTimer() {
+  const timerEl = document.getElementById("timer");
+  timer = setInterval(() => {
+    timeLeft--;
+    let minutes = Math.floor(timeLeft / 60);
+    let seconds = timeLeft % 60;
+    timerEl.textContent = `⏱️ ${minutes}:${seconds.toString().padStart(2, '0')}`;
+    if (timeLeft <= 0) {
+      clearInterval(timer);
+      endGame();
+    }
+  }, 1000);
+}
+
+function endGame() {
+  document.getElementById("game").innerHTML = `
+    <h2>🕒 Time's up!</h2>
+    <p>Well done, <strong>${team}</strong>!</p>
+    <p>Wait for your teacher to reveal the final scores! 👻</p>
+  `;
+}
+
+function sendResult(team, word, guess, attempt, result) {
+  fetch(sheetURL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ team, word, guess, attempt, result })
+  });
+}
+</script>
+</body>
+</html>
